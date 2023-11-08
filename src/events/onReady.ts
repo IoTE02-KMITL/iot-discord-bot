@@ -1,18 +1,16 @@
-import { Client, REST, Routes } from "discord.js";
-import { CommandList } from "../commands/_CommandList";
+import { Client } from "discord.js";
+import { guildCommand } from "../utils/guildCommand";
+import prisma from "../database/prisma";
 
 export const onReady = async (client: Client) => {
-  const rest = new REST({ version: "9" }).setToken(process.env.DISCORD_TOKEN);
+  const guilds = await prisma.guild.findMany({
+    select: {
+      id: true,
+    },
+  });
 
-  const commandData = CommandList.map((command) => command.data.toJSON());
-
-  await rest.put(
-    Routes.applicationGuildCommands(
-      client.user?.id || "missing id",
-      process.env.DISCORD_GUILD_ID
-    ),
-    { body: commandData }
-  );
-
-  console.log("Successfully registered application commands.");
+  await guildCommand(client, process.env.DISCORD_GUILD_ID);
+  for (const guild of guilds) {
+    await guildCommand(client, guild.id);
+  }
 };
